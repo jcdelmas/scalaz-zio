@@ -68,6 +68,19 @@ trait StreamChunk[+E, @specialized +A] { self =>
           .map(_._2.asInstanceOf[S]) // Cast is redundant but unfortunately necessary to appease Scala 2.11
     })
 
+  def take(n: Int): StreamChunk[E, A] =
+    StreamChunk(new Stream[E, Chunk[A]] {
+      override def foldLazy[E1 >: E, A1 >: Chunk[A], S](s: S)(cont: S => Boolean)(f: (S, A1) => IO[E1, S]): IO[E1, S] =
+        self
+          .foldLazyChunks[E1, A, (Int, S)](0 -> s)(tp => tp._1 < n && cont(tp._2)) {
+            case ((count, s), as) =>
+              val newLength = as.length + count
+              val chunk     = if (newLength > n) as.take(n - count) else as
+              f(s, chunk).map(newLength -> _)
+          }
+          .map(_._2.asInstanceOf[S]) // Cast is redundant but unfortunately necessary to appease Scala 2.11
+    })
+
   def takeWhile(pred: A => Boolean): StreamChunk[E, A] =
     StreamChunk(new Stream[E, Chunk[A]] {
       override def foldLazy[E1 >: E, A1 >: Chunk[A], S](s: S)(cont: S => Boolean)(f: (S, A1) => IO[E1, S]): IO[E1, S] =

@@ -21,6 +21,7 @@ class StreamChunkSpec(implicit ee: org.specs2.concurrent.ExecutionEnv)
   StreamChunk.filterNot     $filterNot
   StreamChunk.mapConcat     $mapConcat
   StreamChunk.dropWhile     $dropWhile
+  StreamChunk.take          $take
   StreamChunk.takeWhile     $takeWhile
   StreamChunk.mapAccum      $mapAccum
   StreamChunk.mapM          $mapM
@@ -78,6 +79,11 @@ class StreamChunkSpec(implicit ee: org.specs2.concurrent.ExecutionEnv)
   private def dropWhile =
     prop { (s: StreamChunk[String, String], p: String => Boolean) =>
       slurp(s.dropWhile(p)) must_=== slurp(s).map(_.dropWhile(p))
+    }
+
+  private def take =
+    prop { (s: StreamChunk[Nothing, String], n: Int) =>
+      slurp(s.take(n)) must_=== slurp(s).map(_.take(n))
     }
 
   private def takeWhile =
