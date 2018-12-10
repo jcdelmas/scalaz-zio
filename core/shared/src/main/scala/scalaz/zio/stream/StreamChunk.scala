@@ -53,6 +53,9 @@ trait StreamChunk[+E, @specialized +A] { self =>
       as.traverse_(f0)
     })
 
+  def collect[B](pf: PartialFunction[A, B]): StreamChunk[E, B] =
+    StreamChunk(chunks.map(_.collect(pf)))
+
   def drop(n: Int): StreamChunk[E, A] =
     StreamChunk(new Stream[E, Chunk[A]] {
       override def foldLazy[E1 >: E, A1 >: Chunk[A], S](s: S)(cont: S => Boolean)(f: (S, A1) => IO[E1, S]): IO[E1, S] =

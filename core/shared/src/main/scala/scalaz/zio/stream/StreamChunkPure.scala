@@ -21,6 +21,9 @@ private[stream] trait StreamChunkPure[@specialized +A] extends StreamChunk[Nothi
 
   override def mapConcat[B](f: A => Chunk[B]): StreamChunkPure[B] =
     StreamChunkPure(chunks.map(_.flatMap(f)))
+
+  override def collect[B](pf: PartialFunction[A, B]): StreamChunkPure[B] =
+    StreamChunkPure(chunks.map(_.collect(pf)))
 }
 
 object StreamChunkPure {

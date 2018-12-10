@@ -20,6 +20,7 @@ class StreamChunkSpec(implicit ee: org.specs2.concurrent.ExecutionEnv)
   StreamChunk.filter        $filter
   StreamChunk.filterNot     $filterNot
   StreamChunk.mapConcat     $mapConcat
+  StreamChunk.collect       $collect
   StreamChunk.drop          $drop
   StreamChunk.dropWhile     $dropWhile
   StreamChunk.take          $take
@@ -76,6 +77,13 @@ class StreamChunkSpec(implicit ee: org.specs2.concurrent.ExecutionEnv)
       slurp(s.mapConcat(f)) must_=== slurp(s).map(_.flatMap(v => f(v).toSeq))
     }
   }
+
+  private def collect =
+    prop { (s: StreamChunk[String, String], f: String => Int, pred: String => Boolean) =>
+      val streamCollect = slurp(s.collect { case a if pred(a)        => f(a) })
+      val listCollect   = slurp(s).map(_.collect { case a if pred(a) => f(a) })
+      streamCollect must_=== listCollect
+    }
 
   private def drop =
     prop { (s: StreamChunk[String, String], n: Int) =>
