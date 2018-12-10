@@ -327,6 +327,39 @@ sealed trait Chunk[@specialized +A] { self =>
   }
 
   /**
+   * Statefully and effectfully maps over the chunk, producing new elements of type `B`.
+   */
+  final def mapAccumM[E, S1, B](s1: S1)(f1: (S1, A) => IO[E, (S1, B)]): IO[E, (S1, Chunk[B])] = {
+    var i                           = 0
+    var dest: IO[E, (S1, Array[B])] = IO.now(s1 -> null.asInstanceOf[Array[B]])
+    val len                         = self.length
+
+    while (i < len) {
+      val j = i
+      val a = self(j)
+      dest = dest.flatMap {
+        case (s, array) =>
+          f1(s, a).map {
+            case (s, b) =>
+              val array2: Array[B] = if (array == null) {
+                implicit val B: ClassTag[B] = Chunk.Tags.fromValue(b)
+                Array.ofDim(len)
+              } else array
+              array2(j) = b
+              s -> array2
+          }
+      }
+
+      i += 1
+    }
+
+    dest.map {
+      case (s, array) if array == null => s -> Chunk.empty
+      case (s, array)                  => s -> Chunk.Arr(array)
+    }
+  }
+
+  /**
    * Takes the first `n` elements of the chunk.
    */
   final def take(n: Int): Chunk[A] =

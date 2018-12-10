@@ -26,6 +26,7 @@ class StreamChunkSpec(implicit ee: org.specs2.concurrent.ExecutionEnv)
   StreamChunk.take          $take
   StreamChunk.takeWhile     $takeWhile
   StreamChunk.mapAccum      $mapAccum
+  StreamChunk.mapAccumM     $mapAccumM
   StreamChunk.mapM          $mapM
   StreamChunk.++            $concat
   StreamChunk.zipWithIndex  $zipWithIndex
@@ -123,6 +124,12 @@ class StreamChunkSpec(implicit ee: org.specs2.concurrent.ExecutionEnv)
   private def mapAccum =
     prop { s: StreamChunk[String, Int] =>
       val slurped = slurpM(s.mapAccum(0)((acc, el) => (acc + el, acc + el)))
+      slurped must_=== slurp(s).map(_.scan(0)((acc, el) => acc + el).drop(1))
+    }
+
+  private def mapAccumM =
+    prop { s: StreamChunk[String, Int] =>
+      val slurped = slurpM(s.mapAccumM(0)((acc, el) => IO.now((acc + el, acc + el))))
       slurped must_=== slurp(s).map(_.scan(0)((acc, el) => acc + el).drop(1))
     }
 

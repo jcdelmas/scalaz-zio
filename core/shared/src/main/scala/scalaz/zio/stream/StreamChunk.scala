@@ -131,6 +131,9 @@ trait StreamChunk[+E, @specialized +A] { self =>
   final def mapAccum[@specialized S1, @specialized B](s1: S1)(f1: (S1, A) => (S1, B)): StreamChunk[E, B] =
     StreamChunk(chunks.mapAccum(s1)((s1: S1, as: Chunk[A]) => as.mapAccum(s1)(f1)))
 
+  final def mapAccumM[E1 >: E, S1, B](s1: S1)(f1: (S1, A) => IO[E1, (S1, B)]): StreamChunk[E1, B] =
+    StreamChunk(chunks.mapAccumM[E1, S1, Chunk[B]](s1)((s1: S1, as: Chunk[A]) => as.mapAccumM(s1)(f1)))
+
   def map[@specialized B](f: A => B): StreamChunk[E, B] =
     StreamChunk(chunks.map(_.map(f)))
 
