@@ -53,6 +53,20 @@ trait StreamChunk[+E, @specialized +A] { self =>
       as.traverse_(f0)
     })
 
+  def drop(n: Int): StreamChunk[E, A] =
+    StreamChunk(new Stream[E, Chunk[A]] {
+      override def foldLazy[E1 >: E, A1 >: Chunk[A], S](s: S)(cont: S => Boolean)(f: (S, A1) => IO[E1, S]): IO[E1, S] =
+        self
+          .foldLazyChunks[E1, A, (Int, S)](0 -> s)(tp => cont(tp._2)) {
+            case ((count, s), as) if count < n =>
+              val newLength = as.length + count
+              if (newLength > n) f(s, as.drop(n - count)).map(newLength -> _)
+              else IO.now(newLength                                     -> s)
+            case ((count, s), as) => f(s, as).map(count -> _)
+          }
+          .map(_._2.asInstanceOf[S]) // Cast is redundant but unfortunately necessary to appease Scala 2.11
+    })
+
   def dropWhile(pred: A => Boolean): StreamChunk[E, A] =
     StreamChunk(new Stream[E, Chunk[A]] {
       override def foldLazy[E1 >: E, A1 >: Chunk[A], S](s: S)(cont: S => Boolean)(f: (S, A1) => IO[E1, S]): IO[E1, S] =
